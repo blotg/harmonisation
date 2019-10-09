@@ -23,11 +23,11 @@ class StatContainer(QGroupBox):
         chart = QChart()
         chart.createDefaultAxes()
         chart.setTitle("Test")
+        chart.setMargins(QMargins(0,0,0,0));
+        chart.layout().setContentsMargins(0, 0, 0, 0);
         chartView = QChartView(chart)
         chartView.setRenderHint(QPainter.Antialiasing);
         return chartView
 
     def sizeHint(self):
         return QSize(400,300)
-
-

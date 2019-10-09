@@ -9,10 +9,11 @@ import re
 class TableWidget(QTableWidget):
     def __init__(self):
         super().__init__(0,5)
+        self.subjectsList=[]
         self.setColumnWidth(0,120)
         self.setColumnWidth(1,60)
         self.setColumnWidth(2,80)
-        self.setColumnWidth(3,50)
+        self.setColumnWidth(3,50)    
         self.setColumnWidth(4,50)
         self.setHorizontalHeaderLabels(["Élève", "Score", "Sujet", "Note", "Rang"])
         self.itemChanged.connect(self.itemChange)
@@ -28,7 +29,7 @@ class TableWidget(QTableWidget):
             if texte:
                 valeur = float(texte.group(0))
             item.setText(str(valeur))
-
+            
     def appendRow(self):
         row = self.rowCount()
         super().insertRow(row)
@@ -37,6 +38,7 @@ class TableWidget(QTableWidget):
         item = QTableWidgetItem(3)
         self.setItem(row, 1, item)
         combo = QComboBox()
+        combo.addItems(self.subjectsList)
         self.setCellWidget(row, 2, combo)
         item = QTableWidgetItem()
         item.setFlags(item.flags() ^ Qt.ItemIsEditable)
@@ -52,8 +54,9 @@ class TableWidget(QTableWidget):
         self.setItem(row, 0, item)
         item = QTableWidgetItem()
         self.setItem(row, 1, item)
-        item = QTableWidgetItem()
-        self.setItem(row, 2, item)
+        combo = QComboBox()
+        combo.addItems(self.subjectsList)
+        self.setCellWidget(row, 2, combo)
         item = QTableWidgetItem()
         item.setFlags(item.flags() ^ Qt.ItemIsEditable)
         self.setItem(row, 3, item)
@@ -65,6 +68,21 @@ class TableWidget(QTableWidget):
         row = self.currentRow()
         super().removeRow(row)
 
+    def addSubject(self, subject):
+        self.subjectsList.append(subject)
+        for row in range(self.rowCount()):
+            self.cellWidget(row,2).addItem(subject)
+
+    def removeSubject(self, i):
+        self.subjectsList.pop(i)
+        for row in range(self.rowCount()):
+            self.cellWidget(row,2).removeItem(i)
+
+    def changeSubject(self, i, subject):
+        self.subjectsList[i] = subject
+        for row in range(self.rowCount()):
+            self.cellWidget(row,2).setItemText(i,subject)
+    
     def sizeHint(self):
         return QSize(400, 450)
 
@@ -86,3 +104,12 @@ class TableContainer(QGroupBox):
         toolBar.addAction("Supprimer ligne").triggered.connect(self.tableWidget.removeRow)
         toolBar.addAction("Insérer ligne à la fin").triggered.connect(self.tableWidget.appendRow)
         return toolBar
+
+    def addSubject(self, subject):
+        self.tableWidget.addSubject(subject)
+
+    def removeSubject(self, i):
+        self.tableWidget.removeSubject(i)
+
+    def changeSubject(self, i, subject):
+        self.tableWidget.changeSubject(i,subject)

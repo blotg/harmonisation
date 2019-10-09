@@ -6,10 +6,13 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 
 class ListContainer(QGroupBox):
-    changed = pyqtSignal(list)
-
+    added = pyqtSignal(str)
+    removed = pyqtSignal(int)
+    changed = pyqtSignal(int,str)
+    
     def __init__(self):
         super().__init__()
+        self.subjectsList = []
         self.setTitle("Liste des sujets")
         mainLayout = QHBoxLayout()
         self.listWidget = QListWidget()
@@ -26,22 +29,26 @@ class ListContainer(QGroupBox):
         return toolBar
 
     def addItem(self):
-        item = QListWidgetItem("Sujet {:d}".format(self.listWidget.count()+1))
+        title = "Sujet {:d}".format(self.listWidget.count()+1)
+        item = QListWidgetItem(title)
         item.setFlags(item.flags() | Qt.ItemIsEditable)
         self.listWidget.addItem(item)
-        self.hasChanged()
+        self.subjectsList.append(title)
+        self.added.emit(title)
 
     def removeItem(self):
-        self.listWidget.takeItem(self.listWidget.currentRow())
-        self.hasChanged()
+        i = self.listWidget.currentRow()
+        if i >= 0:
+            self.listWidget.takeItem(i)
+            self.subjectsList.pop(i)
+            self.removed.emit(i)
 
     def hasChanged(self):
-        stringList=[]
         for i in range(self.listWidget.count()):
-            stringList.append(self.listWidget.item(i).text())
-        print(stringList)
-        self.changed.emit(stringList)
+            if self.listWidget.item(i).text() != self.subjectsList[i]:
+                self.changed.emit(i,self.listWidget.item(i).text())
+                self.subjectsList[i] = self.listWidget.item(i).text()
 
     def sizeHint(self):
         return QSize(400,150)
-
+    
