@@ -1,103 +1,123 @@
 # -*- coding: utf-8 -*-
 
-from PyQt5.QtWidgets import *#QApplication, QMainWindow, QAction, QHBoxLayout, QVBoxLayout, QTableWidget, QWidget
-from PyQt5.QtChart import *
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
+from PyQt5.QtWidgets import QWidget, QTabWidget, QFormLayout, QDoubleSpinBox, QAbstractSpinBox, QGroupBox, QVBoxLayout
+from PyQt5.QtGui import QPainter
+from PyQt5.QtCore import pyqtSignal, QSize, QMargins
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
 from sys import float_info
 
-class PlotWidget(QChartView):
-    def __init__(self, f):
-        self.chart = QChart()
-        self.setFunction(f)
-        self.chart.setMargins(QMargins(0,0,0,0));
-        self.chart.layout().setContentsMargins(0, 0, 0, 0);
-        super().__init__(self.chart)
-        self.setRenderHint(QPainter.Antialiasing);
-    def setFunction(self,f):
-        self.f = f
-    def setParametersList(self, parametersList):
-        self.parametersList = parametersList
-        self.refresh()
+class PlotWidget(FigureCanvas):
+    def __init__(self, functions):
+        self.figure = Figure()
+        super().__init__(self.figure)
+        self.functions = functions
+        self.functions.changed.connect(self.refresh)
     def refresh(self):
-        self.chart.removeAllSeries()
-        for p in self.parametersList:
-            scoreMax = 36
-            series = QLineSeries()
+        ax = self.figure.add_subplot(111)
+        ax.clear()
+        globalMaxScore = 0
+        legend = []
+        for i in range(self.functions.subjectsNumber()):
+            scoreMax = self.functions.stats[i]["max"]
+            if scoreMax > globalMaxScore:
+                globalMaxScore = scoreMax
             N = 100
-            increasing = True
             maxi = -float_info.max
-            for x in range(N+1):
-                y = self.f(x,*p["parameters"])
+            xList = [scoreMax*i/N for i in range(N+1)]
+            yList = [self.functions.evaluate(i,x) for x in xList]
+            increasing = True
+            for y in yList:
                 if y > maxi:
                     maxi = y
                 else:
                     increasing = False
-                series.append(x,y)
-            self.chart.addSeries(series)
-            if increasing:
-                series.setName(p["name"])
+            if increasing :
+                legend.append(self.functions.subjectsNames[i])
             else:
-                series.setName(p["name"]+"⚠")
-        self.chart.createDefaultAxes()
-        if self.chart.axes():
-            self.chart.axes()[0].setTitleText("Score")
-            self.chart.axes()[1].setTitleText("Note")
+                legend.append(self.functions.subjectsNames[i]+"⚠")
+            ax.plot(xList,yList)
+        ax.legend(legend)
+        ax.set_xlabel("Score")
+        ax.set_ylabel("Note")
+        ax.set_xlim(0, globalMaxScore)
+        self.draw()
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        height = self.size().height()
+        width = self.size().width()
+        if height != 0 and width != 0:
+            left = 55./width
+            right = 1 - 15./width
+            bottom = 50./height
+            top = 1 - 10./height
+            if top > bottom and left < right:
+                self.figure.subplots_adjust(left=left, right=right, top=top, bottom=bottom, wspace=0, hspace=0)
     def sizeHint(self):
         return QSize(400,400)
 
 class Form(QTabWidget):
     changed = pyqtSignal(object)
-    def __init__(self, parameters):
+    def __init__(self, functions):
         super().__init__()
-        self.parameters = parameters
-    def addSubject(self,nom):
+        self.functions = functions
+        self.functions.subjectAdded.connect(self.addSubject)
+        self.functions.subjectChanged.connect(self.changeSubject)
+        self.functions.subjectRemoved.connect(self.removeSubject)
+        self.functions.functionChanged.connect(self.reinitiate)
+    def addSubject(self):
         tab = QWidget()
         layout = QFormLayout()
-        for (p,v) in self.parameters:
+        i = self.functions.subjectsNumber()-1
+        for j in range(self.functions.parametersNumber()):
             doubleSpinBox = QDoubleSpinBox()
             doubleSpinBox.setMinimum(-float_info.max)
             doubleSpinBox.setMaximum(float_info.max)
-            doubleSpinBox.valueChanged.connect(self.valueChanged)
             doubleSpinBox.setStepType(QAbstractSpinBox.AdaptiveDecimalStepType)
-            if v:
-                doubleSpinBox.setValue(v)
-            layout.addRow(p, doubleSpinBox)
+            doubleSpinBox.setValue(self.functions.defaultParameters[j])
+            doubleSpinBox.valueChanged.connect(lambda : self.functions.setParameters(i,self.values(i)))
+            layout.addRow(self.functions.parametersNames[j], doubleSpinBox)
         tab.setLayout(layout)
-        self.addTab(tab,nom)
-        self.valueChanged()
+        self.addTab(tab,self.functions.subjectsNames[i])
     def removeSubject(self,i):
         self.removeTab(i)
-        self.valueChanged()
     def changeSubject(self,i,name):
         self.setTabText(i,name)
-        self.valueChanged()
-    def values(self):
-        L = []
-        for i in range(self.count()):
-            tab = self.widget(i)
-            l = []
-            for j in range(tab.layout().rowCount()):
-                l.append(tab.layout().itemAt(j,1).widget().value())
-            L.append({"name":self.tabText(i), "parameters":l})
-        return L    
+    def reinitiate(self):
+        while self.count() != 0:
+            self.removeTab(0)
+        for i in range(self.functions.subjecstNumber()):
+            tab = QWidget()
+            layout = QFormLayout()
+            for j in range(len(self.functions.parametersNumber())):
+                doubleSpinBox = QDoubleSpinBox()
+                doubleSpinBox.setMinimum(-float_info.max)
+                doubleSpinBox.setMaximum(float_info.max)
+                doubleSpinBox.setStepType(QAbstractSpinBox.AdaptiveDecimalStepType)
+                doubleSpinBox.setValue(self.functions.defaultParameters[j])
+                doubleSpinBox.valueChanged.connect(lambda : self.functions.setParameters(i,self.values(i)))
+                layout.addRow(self.functions.parametersNames[j], doubleSpinBox)
+            tab.setLayout(layout)
+            self.addTab(tab,self.functions.subjectsNames[i])
+    def values(self, i):
+        tab = self.widget(i)
+        l = []
+        for j in range(tab.layout().rowCount()):
+            l.append(tab.layout().itemAt(j,1).widget().value())
+        return l
     def valueChanged(self):
         self.changed.emit(self.values())
     def sizeHint(self):
         return QSize(0,0)
 
 class ParametersContainer(QGroupBox):
-    def __init__(self, f, parameters):
+    def __init__(self, functions):
         super().__init__()
         self.setTitle("Paramètres d'harmonisation")
         layout = QVBoxLayout()
-        self.form = Form(parameters)
-        self.plot = PlotWidget(f)
-        self.form.changed.connect(self.plot.setParametersList)
+        self.form = Form(functions)
+        self.plot = PlotWidget(functions)
         layout.addWidget(self.form)
         layout.addWidget(self.plot)
         self.setLayout(layout)
-        self.form.values()
-    def sizeHint(self):
-        return QSize(400,400)
 
