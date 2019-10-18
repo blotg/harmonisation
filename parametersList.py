@@ -2,9 +2,6 @@
 
 from PyQt5.QtWidgets import QToolBar, QListWidgetItem, QGroupBox, QHBoxLayout, QListWidget
 from PyQt5.QtCore import QSize, Qt
-#from PyQt5.QtChart import *
-#from PyQt5.QtGui import *
-#from PyQt5.QtCore import *
 
 class ListContainer(QGroupBox):
     def __init__(self, functions):

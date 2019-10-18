@@ -2,16 +2,14 @@
 # -*- coding: utf-8 -*-
 
 import sys
-from PyQt5.QtWidgets import QMainWindow, QApplication, QSplitter, QAction#, QMainWindow, QAction, QHBoxLayout, QVBoxLayout, QTableWidget, QWidget
-#from PyQt5.QtChart import *
-#from PyQt5.QtGui import *
+from PyQt5.QtWidgets import QMainWindow, QApplication, QSplitter, QAction
 from PyQt5.QtCore import Qt
-from Table import TableContainer
-from Parameters import ParametersContainer
-from Statistics import StatContainer
-from List import ListContainer
-from Functions import Functions
-from Data import Data
+from table import TableContainer
+from parameters import ParametersContainer
+from statistics import StatContainer
+from subjectList import ListContainer
+from functions import Functions
+from data import Data
 
 class App(QMainWindow):
     def __init__(self):

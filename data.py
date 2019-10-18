@@ -31,7 +31,6 @@ class Data(QObject):
         self.functions.setStats(self.getStatsScores())
         self.recompute()
     def setChoosenSubject(self,i,subject):
-        print("OK")
         self.choosenSubjects[i] = subject
         self.functions.setStats(self.getStatsScores())
         self.recompute()
