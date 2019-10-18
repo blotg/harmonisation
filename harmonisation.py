@@ -7,7 +7,7 @@ from PyQt5.QtCore import Qt
 from table import TableContainer
 from parameters import ParametersContainer
 from statistics import StatContainer
-from subjectList import ListContainer
+from subjectsList import ListContainer
 from functions import Functions
 from data import Data
 

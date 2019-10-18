@@ -2,7 +2,7 @@
 
 from inspect import signature, _empty
 from PyQt5.QtCore import pyqtSignal, QObject
-from Data import defaultStats
+from data import defaultStats
 
 class Functions(QObject):
     changed = pyqtSignal()
